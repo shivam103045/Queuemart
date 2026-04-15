@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}QueueSmart — Intelligent Queue Management{% endblock %}
+{% block page_title %}Home{% endblock %}
+{% block topbar_actions %}<a href="/register" class="btn btn-primary btn-sm">Get Token →</a>{% endblock %}
+{% block content %}
+<style>
+.home-wrap{max-width:900px;margin:0 auto;padding:52px 28px 60px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--a);letter-spacing:.8px;text-transform:uppercase;margin-bottom:20px;animation:fadeUp .4s ease both}
+.hero-eyebrow-dot{width:5px;height:5px;border-radius:50%;background:var(--a);animation:blink 2s infinite}
+.hero-h1{font-size:clamp(2rem,5vw,3rem);font-weight:700;letter-spacing:-1px;line-height:1.12;margin-bottom:16px;animation:fadeUp .4s .05s ease both}
+.hero-h1 em{font-family:var(--serif);font-style:italic;color:var(--a);font-weight:400}
+.hero-p{font-size:15px;color:var(--t2);line-height:1.75;max-width:560px;margin-bottom:32px;animation:fadeUp .4s .1s ease both}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:52px;animation:fadeUp .4s .15s ease both}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--b1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden;margin-bottom:52px;animation:fadeUp .4s .2s ease both}
+@media(max-width:600px){.stats-row{grid-template-columns:1fr 1fr}}
+.stat-cell{background:var(--s3);padding:20px;text-align:center}
+.sc-n{font-size:1.6rem;font-weight:700;letter-spacing:-.5px;color:var(--t1);margin-bottom:4px;font-family:var(--mono)}.sc-n.a{color:var(--a)}.sc-l{font-size:11px;color:var(--t3);font-weight:500;letter-spacing:.3px}
+.sec-label{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px}
+.sec-title{font-size:1.2rem;font-weight:700;color:var(--t1);letter-spacing:-.3px;margin-bottom:20px}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:52px;animation:fadeUp .4s .25s ease both}
+@media(max-width:640px){.svc-grid{grid-template-columns:1fr 1fr}}
+.svc-card{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);padding:18px 16px;cursor:pointer;transition:all .18s;display:block;position:relative;overflow:hidden}
+.svc-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--a);transform:scaleX(0);transition:transform .2s}
+.svc-card:hover{background:var(--s4);border-color:var(--b3);transform:translateY(-2px)}.svc-card:hover::after{transform:scaleX(1)}
+.svc-ico{font-size:22px;margin-bottom:10px}.svc-nm{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:4px}.svc-desc{font-size:11px;color:var(--t3);line-height:1.5}.svc-speed{font-size:10px;color:var(--a);font-weight:600;margin-top:8px}
+.how-grid{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden;animation:fadeUp .4s .3s ease both}
+@media(max-width:700px){.how-grid{grid-template-columns:1fr}}
+.how-step{padding:24px 18px;border-right:1px solid var(--b1);background:var(--s3);transition:background .15s}.how-step:last-child{border-right:none}.how-step:hover{background:var(--s4)}
+.hs-n{font-size:11px;font-weight:700;color:var(--a);letter-spacing:1px;margin-bottom:10px;font-family:var(--mono)}.hs-icon{font-size:20px;margin-bottom:8px}.hs-title{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:5px}.hs-desc{font-size:11px;color:var(--t3);line-height:1.6}
+.queue-preview{border:1px solid var(--b2);border-radius:var(--r2);overflow:hidden;animation:fadeUp .4s .35s ease both;margin-bottom:52px}
+.qp-header{padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;background:var(--s3)}
+.qp-title{font-size:13px;font-weight:600;color:var(--t1)}
+.qp-row{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--b1);background:var(--s3);transition:background .12s}.qp-row:last-child{border-bottom:none}.qp-row:hover{background:var(--s4)}.qp-row.serving{background:rgba(16,163,127,.06)}
+.qp-tok{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--a);min-width:48px}.qp-name{font-size:13px;flex:1;color:var(--t1)}.qp-svc{font-size:11px;color:var(--t3)}.qp-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.qp-empty{padding:32px;text-align:center;font-size:13px;color:var(--t3);background:var(--s3)}
+</style>
+<div class="home-wrap">
+  <div class="hero-eyebrow"><div class="hero-eyebrow-dot"></div>Real-Time Queue Intelligence</div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;animation:fadeUp .4s .04s ease both">
+    <svg width="52" height="52" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="8" fill="#10a37f"/>
+      <rect x="8" y="10" width="13" height="2.5" rx="1.25" fill="white" opacity="0.95"/>
+      <rect x="8" y="15" width="9" height="2.5" rx="1.25" fill="white" opacity="0.7"/>
+      <rect x="8" y="20" width="11" height="2.5" rx="1.25" fill="white" opacity="0.85"/>
+      <polyline points="12,27 15,30 23,21" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.5px;color:var(--t1);line-height:1">Queue<span style="color:var(--a)">Smart</span></div>
+      <div style="font-size:10px;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase;font-weight:600;margin-top:3px">Crowd Intelligence</div>
+    </div>
+  </div>
+  <h1 class="hero-h1">Intelligent queue management,<br><em>beautifully</em> simple.</h1>
+  <p class="hero-p">Scan a QR code, register in seconds, receive a smart token. Our system uses computer vision to monitor crowd density in real-time and gives you an accurate, live estimated wait time.</p>
+  <div class="hero-actions">
+    <a href="/register" class="btn btn-primary btn-lg">Get Your Token →</a>
+    <a href="/dashboard" class="btn btn-ghost btn-lg">View Dashboard</a>
+  </div>
+  <div class="stats-row">
+    <div class="stat-cell"><div class="sc-n a" id="s-waiting">0</div><div class="sc-l">In Queue</div></div>
+    <div class="stat-cell"><div class="sc-n" id="s-served">0</div><div class="sc-l">Served Today</div></div>
+    <div class="stat-cell"><div class="sc-n a" id="s-current">—</div><div class="sc-l">Now Serving</div></div>
+    <div class="stat-cell"><div class="sc-n" id="s-wait">—</div><div class="sc-l">Avg Wait (min)</div></div>
+  </div>
+  <div class="sec-label">Services</div>
+  <div class="sec-title">Choose your service to begin</div>
+  <div class="svc-grid">
+    <a href="/register?service=hospital" class="svc-card"><div class="svc-ico">🏥</div><div class="svc-nm">Hospital / Clinic</div><div class="svc-desc">OPD, lab tests, pharmacy, doctor appointments</div><div class="svc-speed">~1.5 min/person</div></a>
+    <a href="/register?service=bank" class="svc-card"><div class="svc-ico">🏦</div><div class="svc-nm">Bank / Finance</div><div class="svc-desc">Deposits, withdrawals, KYC, account services</div><div class="svc-speed">~2 min/person</div></a>
+    <a href="/register?service=event" class="svc-card"><div class="svc-ico">🎵</div><div class="svc-nm">Event / Concert</div><div class="svc-desc">Entry ticketing, band performances, festivals</div><div class="svc-speed">~0.8 min/person</div></a>
+    <a href="/register?service=govt" class="svc-card"><div class="svc-ico">🏢</div><div class="svc-nm">Government Office</div><div class="svc-desc">Certificates, registrations, permits, ID cards</div><div class="svc-speed">~3 min/person</div></a>
+    <a href="/register?service=retail" class="svc-card"><div class="svc-ico">🛒</div><div class="svc-nm">Retail / Store</div><div class="svc-desc">Billing counter, customer service, returns</div><div class="svc-speed">~1 min/person</div></a>
+    <a href="/register?service=other" class="svc-card"><div class="svc-ico">📋</div><div class="svc-nm">Other Service</div><div class="svc-desc">Any venue requiring intelligent queue management</div><div class="svc-speed">~1.5 min/person</div></a>
+  </div>
+  <div class="sec-label">Live Queue</div>
+  <div class="queue-preview">
+    <div class="qp-header"><span class="qp-title">Current Queue Status</span><span class="badge bg-ok" id="qp-badge">0 waiting</span></div>
+    <div id="qp-body"><div class="qp-empty">Queue is empty — be the first to register.</div></div>
+  </div>
+  <div class="sec-label" style="margin-bottom:14px">How it works</div>
+  <div class="how-grid">
+    <div class="how-step"><div class="hs-n">01</div><div class="hs-icon">📷</div><div class="hs-title">Scan QR</div><div class="hs-desc">Scan the QR at the entrance to open the portal</div></div>
+    <div class="how-step"><div class="hs-n">02</div><div class="hs-icon">📝</div><div class="hs-title">Register</div><div class="hs-desc">Enter your name, phone, email and select service</div></div>
+    <div class="how-step"><div class="hs-n">03</div><div class="hs-icon">🎫</div><div class="hs-title">Get Token</div><div class="hs-desc">Receive a unique token with estimated wait time</div></div>
+    <div class="how-step"><div class="hs-n">04</div><div class="hs-icon">📊</div><div class="hs-title">Track Progress</div><div class="hs-desc">Live crowd density and wait estimates update in real time</div></div>
+    <div class="how-step"><div class="hs-n">05</div><div class="hs-icon">🔔</div><div class="hs-title">Get Called</div><div class="hs-desc">Your token is called when it's your turn</div></div>
+  </div>
+</div>
+<script>
+async function refreshHome(){
+  try{
+    const d=await api('/api/stats');
+    ['s-waiting','s-served','s-current','s-wait'].forEach((id,i)=>document.getElementById(id).textContent=[d.waiting,d.served,d.current_serving,d.avg_wait||'—'][i]);
+    const q=await api('/api/queue');
+    document.getElementById('qp-badge').textContent=q.waiting_count+' waiting';
+    const el=document.getElementById('qp-body');
+    el.innerHTML=q.queue?.length?q.queue.slice(0,5).map((u,i)=>`<div class="qp-row ${i===0?'serving':''}"><span class="qp-tok">${u.token}</span><div style="flex:1;min-width:0"><div class="qp-name">${u.name}</div><div class="qp-svc">${u.service_icon} ${u.service_label}</div></div><div class="qp-dot" style="background:${i===0?'var(--ok)':i===1?'var(--info)':'var(--t4)'}"></div></div>`).join('')+(q.waiting_count>5?`<div style="padding:10px 18px;font-size:11px;color:var(--t3);background:var(--s3)">+${q.waiting_count-5} more</div>`:''): '<div class="qp-empty">Queue is empty — be the first to register.</div>';
+  }catch(e){}
+}
+refreshHome();setInterval(refreshHome,5000);
+</script>
+{% endblock %}

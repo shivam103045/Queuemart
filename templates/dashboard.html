@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — QueueSmart{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+<div style="font-family:var(--mono);font-size:12px;color:var(--t3)" id="clock">—</div>
+<button onclick="refreshAll()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+<a href="/register" class="btn btn-primary btn-sm">+ New</a>
+{% endblock %}
+{% block content %}
+<style>
+.dash-body{padding:24px 28px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:900px){.metrics{grid-template-columns:1fr 1fr}}
+.mc{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);padding:16px;animation:fadeUp .35s ease both;transition:border-color .15s}.mc:hover{border-color:var(--b3)}
+.mc-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}.mc-label{font-size:11px;color:var(--t3);font-weight:500}.mc-icon{font-size:16px}
+.mc-val{font-size:1.6rem;font-weight:700;letter-spacing:-.5px;color:var(--t1);font-family:var(--mono)}.mc-val.a{color:var(--a)}.mc-val.w{color:var(--warn)}.mc-val.b{color:var(--info)}
+.mc-delta{font-size:11px;color:var(--t3);margin-top:3px}
+.dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
+.panel{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);overflow:hidden}
+.panel-head{padding:13px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.ph-title{font-size:13px;font-weight:600;color:var(--t1)}.ph-badge{font-size:10px;color:var(--t3);font-weight:500;background:var(--s4);padding:3px 8px;border-radius:5px;border:1px solid var(--b1)}
+.panel-body{padding:14px 16px}
+.ztabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.ztab{padding:5px 12px;border-radius:var(--r);font-size:11px;font-weight:600;background:var(--s4);border:1px solid var(--b1);color:var(--t3);cursor:pointer;transition:all .15s}
+.ztab:hover{color:var(--t1);border-color:var(--b3)}.ztab.on{background:var(--a);color:white;border-color:var(--a)}
+.cam-wrap{border-radius:var(--r);overflow:hidden;background:#0d0d0d;position:relative;margin-bottom:12px}
+.cam-img{width:100%;display:block;min-height:180px}
+.cam-hud{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:none}
+.cam-tag{background:rgba(0,0,0,.7);color:#10a37f;font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 7px;border-radius:4px}
+.cam-rec{background:rgba(0,0,0,.7);color:#ef4444;font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 7px;border-radius:4px;display:flex;align-items:center;gap:4px}
+.rec-dot{width:5px;height:5px;border-radius:50%;background:#ef4444;animation:blink 1s infinite}
+.zbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}.zbar-nm{font-size:11px;color:var(--t3);min-width:82px}.zbar-bg{flex:1;height:5px;background:var(--s4);border-radius:3px;overflow:hidden}.zbar-fill{height:100%;border-radius:3px;transition:width .6s}.zbar-pct{font-size:10px;font-weight:600;min-width:30px;text-align:right}
+.qt-head{display:grid;grid-template-columns:52px 1fr 90px 60px 36px;gap:8px;padding:8px 14px;font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--b1)}
+.qt-body{max-height:360px;overflow-y:auto}.qt-body::-webkit-scrollbar{width:3px}.qt-body::-webkit-scrollbar-thumb{background:var(--s5);border-radius:2px}
+.qt-row{display:grid;grid-template-columns:52px 1fr 90px 60px 36px;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--b1);transition:background .12s}
+.qt-row:last-child{border-bottom:none}.qt-row:hover{background:var(--s4)}.qt-row.now{background:rgba(16,163,127,.07);border-left:2px solid var(--a)}.qt-row.nxt{background:rgba(59,130,246,.05);border-left:2px solid var(--info)}
+.qt-tok{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--a)}.qt-row.nxt .qt-tok{color:var(--info)}
+.qt-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qt-svc{font-size:10px;color:var(--t3);margin-top:1px}.qt-svc-cell{font-size:11px;color:var(--t3)}
+.qt-st{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px}
+.st-now{background:var(--ok-bg);color:var(--ok)}.st-next{background:var(--info-bg);color:var(--info)}.st-wait{background:var(--s4);color:var(--t3)}
+.call-btn{width:100%;background:var(--a);color:white;font-family:var(--font);font-weight:600;font-size:13px;padding:11px;border:none;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;margin-top:10px}
+.call-btn:hover{background:#0d8f6f}.call-btn:active{transform:scale(.98)}
+.called-pill{display:none;margin-top:8px;background:var(--ok-bg);border:1px solid rgba(16,163,127,.2);border-radius:var(--r);padding:10px 12px;animation:slideRight .3s ease}
+.bot-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.bot-grid{grid-template-columns:1fr}}
+.svc-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}.svc-ic{font-size:14px}.svc-nm-s{font-size:11px;color:var(--t3);min-width:58px}.svc-bg{flex:1;height:5px;background:var(--s4);border-radius:3px;overflow:hidden}.svc-fill{height:100%;background:var(--a);border-radius:3px;transition:width .6s}.svc-cnt{font-size:11px;font-weight:700;color:var(--t1);min-width:16px;text-align:right}
+.chart-box{height:150px;position:relative}
+</style>
+<div class="dash-body">
+  <div class="metrics">
+    <div class="mc" style="animation-delay:0s"><div class="mc-row"><span class="mc-label">In Queue</span><span class="mc-icon">👥</span></div><div class="mc-val a" id="m-w">{{ waiting_users|length }}</div><div class="mc-delta" id="m-wd">Waiting now</div></div>
+    <div class="mc" style="animation-delay:.04s"><div class="mc-row"><span class="mc-label">Served Today</span><span class="mc-icon">✅</span></div><div class="mc-val" id="m-s">{{ served_today }}</div><div class="mc-delta">Since start</div></div>
+    <div class="mc" style="animation-delay:.08s"><div class="mc-row"><span class="mc-label">Avg Wait</span><span class="mc-icon">⏱</span></div><div class="mc-val w" id="m-wt">—</div><div class="mc-delta">Minutes</div></div>
+    <div class="mc" style="animation-delay:.12s"><div class="mc-row"><span class="mc-label">Now Serving</span><span class="mc-icon">🔢</span></div><div class="mc-val b" id="m-c">{{ state.current_token and 'T-%03d'|format(state.current_token) or '—' }}</div><div class="mc-delta">Counter 1 &amp; 2</div></div>
+  </div>
+  <div class="dash-grid">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="panel">
+        <div class="panel-head"><div class="ph-title">Queue Breakdown by Zone</div><div class="ph-badge" id="zone-b">Live</div></div>
+        <div class="panel-body">
+          <div style="font-size:11px;color:var(--t3);margin-bottom:12px">Based on registered tokens currently waiting</div>
+          <div id="zbars"></div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--b1)">
+            <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">Priority Breakdown</div>
+            <div id="priority-bars"></div>
+          </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--b1)">
+            <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Avg Real Service Time</div>
+            <div id="avg-service-time" style="font-size:1.4rem;font-weight:700;color:var(--a);font-family:var(--mono)">—</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px">Calculated from completed tokens</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="ph-title">Crowd Density · Last 30 min</div><div class="ph-badge">Live</div></div>
+        <div class="panel-body"><div class="chart-box"><canvas id="dChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="panel" style="display:flex;flex-direction:column">
+      <div class="panel-head"><div class="ph-title">Live Queue</div><div class="ph-badge" id="q-b">0 waiting</div></div>
+      <div class="qt-head"><div>Token</div><div>Person</div><div>Service</div><div>Status</div><div></div></div>
+      <div class="qt-body" id="q-body">
+        {% for u in waiting_users %}{% set svc = services[u.service] if u.service in services else services['other'] %}
+        <div class="qt-row {% if loop.index==1 %}now{% elif loop.index==2 %}nxt{% endif %}">
+          <div class="qt-tok">{{ u.token_num }}</div>
+          <div><div class="qt-name">{{ u.name }}{% if u.priority!='normal' %} ⚡{% endif %}</div><div class="qt-svc">{{ svc.icon }} {{ svc.label }}</div></div>
+          <div class="qt-svc-cell">{{ u.service }}</div>
+          <div><span class="qt-st {% if loop.index==1 %}st-now{% elif loop.index==2 %}st-next{% else %}st-wait{% endif %}">{% if loop.index==1 %}NOW{% elif loop.index==2 %}NEXT{% else %}#{{ loop.index }}{% endif %}</span></div>
+          <div><button onclick="cancelToken('{{ u.token_num }}')" title="Cancel" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--t3);font-size:14px;border-radius:4px;transition:all .15s;line-height:1" onmouseover="this.style.color='var(--err)';this.style.background='var(--err-bg)'" onmouseout="this.style.color='var(--t3)';this.style.background='none'">✕</button></div>
+        </div>
+        {% else %}<div style="text-align:center;padding:32px;font-size:13px;color:var(--t3)">Queue is empty</div>{% endfor %}
+      </div>
+      <div style="padding:12px 14px;border-top:1px solid var(--b1)">
+        <button class="call-btn" onclick="callNext()">▶ Call Next Token</button>
+        <div class="called-pill" id="called-pill"><div style="font-size:13px;font-weight:700;color:var(--ok)" id="called-tok">—</div><div style="font-size:11px;color:var(--ok);opacity:.75" id="called-nm">—</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bot-grid">
+    <div class="panel"><div class="panel-head"><div class="ph-title">By Service Type</div><div class="ph-badge">Waiting</div></div><div class="panel-body"><div id="svc-breakdown"><div style="font-size:12px;color:var(--t3)">Loading...</div></div></div></div>
+    <div class="panel"><div class="panel-head"><div class="ph-title">Quick Actions</div></div>
+      <div class="panel-body">
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <a href="/register" class="btn btn-primary btn-full btn-sm">📝 New Registration</a>
+          <button onclick="refreshAll()" class="btn btn-surface btn-full btn-sm">↻ Refresh All Data</button>
+          <a href="/" class="btn btn-ghost btn-full btn-sm">← Back to Home</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+let chart=null;
+(function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});setTimeout(tick,1000)})();
+async function loadZones(){
+  try{
+    const d=await api('/api/crowd');if(!d.ok)return;
+    document.getElementById('zone-b').textContent=d.total_waiting+' waiting';
+    document.getElementById('zbars').innerHTML=d.zones.map(z=>{
+      const c=z.density_pct<40?'#10a37f':z.density_pct<70?'#d97706':'#ef4444';
+      return`<div class="zbar"><span class="zbar-nm">${z.label}</span><div class="zbar-bg"><div class="zbar-fill" style="width:${z.density_pct}%;background:${c}"></div></div><span class="zbar-pct" style="color:${c}">${z.count} <span style="color:var(--t3);font-size:9px">(${z.density_pct}%)</span></span></div>`;
+    }).join('');
+  }catch(e){}
+}
+async function loadPriorityAndTime(){
+  try{
+    const d=await api('/api/stats');if(!d.ok)return;
+    if(d.avg_real_service_min!=null){
+      document.getElementById('avg-service-time').textContent=d.avg_real_service_min+'m';
+    } else {
+      document.getElementById('avg-service-time').textContent='No data yet';
+    }
+    // priority breakdown from stats
+    const pri=d.priority_counts||{};
+    const priLabels={normal:'Normal',senior:'Senior',disabled:'Disabled',pregnant:'Pregnant'};
+    const priColors={normal:'var(--t3)',senior:'#3b82f6',disabled:'#f59e0b',pregnant:'#ec4899'};
+    const total=Object.values(pri).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('priority-bars').innerHTML=Object.entries(pri).filter(([,v])=>v>0).map(([k,v])=>{
+      const pct=Math.round((v/total)*100);
+      return`<div class="zbar"><span class="zbar-nm" style="color:${priColors[k]||'var(--t3)'}">${priLabels[k]||k}</span><div class="zbar-bg"><div class="zbar-fill" style="width:${pct}%;background:${priColors[k]||'var(--a)'}"></div></div><span class="zbar-pct" style="color:${priColors[k]||'var(--t3)'}">${v}</span></div>`;
+    }).join('')||'<div style="font-size:11px;color:var(--t3)">No data yet</div>';
+  }catch(e){}
+}
+async function loadQueue(){
+  try{
+    const d=await api('/api/queue');if(!d.ok)return;
+    document.getElementById('m-w').textContent=d.waiting_count;document.getElementById('m-s').textContent=d.served_today;document.getElementById('m-wt').textContent=d.avg_wait_min;document.getElementById('m-c').textContent=d.current_serving;document.getElementById('q-b').textContent=d.waiting_count+' waiting';document.getElementById('m-wd').textContent=d.waiting_count+' people waiting';
+    const el=document.getElementById('q-body');
+    el.innerHTML=d.queue.length?d.queue.map((u,i)=>`<div class="qt-row ${i===0?'now':i===1?'nxt':''}"><div class="qt-tok">${u.token}</div><div><div class="qt-name">${u.name}${u.priority!=='normal'?' ⚡':''}</div><div class="qt-svc">${u.service_icon} ${u.service_label}</div></div><div class="qt-svc-cell">${u.service_label.split('/')[0].trim()}</div><div><span class="qt-st ${i===0?'st-now':i===1?'st-next':'st-wait'}">${i===0?'NOW':i===1?'NEXT':'#'+(i+1)}</span></div><div><button onclick="cancelToken('${u.token}')" title="Cancel" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--t3);font-size:14px;border-radius:4px;transition:all .15s;line-height:1" onmouseover="this.style.color='var(--err)';this.style.background='var(--err-bg)'" onmouseout="this.style.color='var(--t3)';this.style.background='none'">✕</button></div></div>`).join('')+(d.waiting_count>d.queue.length?`<div style="text-align:center;padding:10px;font-size:11px;color:var(--t3)">+${d.waiting_count-d.queue.length} more</div>`:''): '<div style="text-align:center;padding:32px;font-size:13px;color:var(--t3)">Queue is empty</div>';
+  }catch(e){}
+}
+async function loadSvc(){
+  try{
+    const d=await api('/api/stats');if(!d.ok)return;
+    const icons={hospital:'🏥',bank:'🏦',event:'🎵',govt:'🏢',retail:'🛒',other:'📋'},names={hospital:'Hospital',bank:'Bank',event:'Event',govt:'Govt',retail:'Retail',other:'Other'},bySvc=d.by_service||{},entries=Object.entries(bySvc).filter(([,v])=>v>0),max=Math.max(...Object.values(bySvc),1);
+    document.getElementById('svc-breakdown').innerHTML=entries.length?entries.map(([k,v])=>`<div class="svc-row"><span class="svc-ic">${icons[k]||'📋'}</span><span class="svc-nm-s">${names[k]||k}</span><div class="svc-bg"><div class="svc-fill" style="width:${Math.round((v/max)*100)}%"></div></div><span class="svc-cnt">${v}</span></div>`).join(''):'<div style="font-size:12px;color:var(--t3)">No data yet</div>';
+  }catch(e){}
+}
+async function loadChart(){
+  try{
+    const d=await api('/api/crowd/history');if(!d.ok)return;
+    const ctx=document.getElementById('dChart').getContext('2d');
+    if(chart)chart.destroy();
+    chart=new Chart(ctx,{type:'line',data:{labels:d.history.map(r=>r.time),datasets:[{data:d.history.map(r=>r.count),borderColor:'#10a37f',backgroundColor:'rgba(16,163,127,.07)',borderWidth:2,pointRadius:2.5,pointBackgroundColor:'#10a37f',fill:true,tension:.45}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#2a2a2a',titleColor:'#ececec',bodyColor:'#ababab',borderColor:'#3d3d3d',borderWidth:1,cornerRadius:8,padding:10}},scales:{x:{ticks:{color:'#6e6e6e',font:{size:10,family:'JetBrains Mono'}},grid:{color:'rgba(255,255,255,.04)'}},y:{min:0,ticks:{color:'#6e6e6e',font:{size:10,family:'JetBrains Mono'}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+  }catch(e){}
+}
+async function cancelToken(token){if(!confirm(`Cancel token ${token}? This cannot be undone.`))return;try{const d=await api('/api/cancel/'+token,'POST');if(d.ok){toast('✓','Token Cancelled',token+' removed from queue',3000);loadQueue()}else toast('❌','Cannot Cancel',d.error||'Token could not be cancelled')}catch(e){toast('❌','Error','Could not reach server')}}
+async function callNext(){try{const d=await api('/api/next','POST');if(!d.ok){toast('⚠️','Queue Empty',d.error||'No tokens');return}toast('🔔','Calling: '+d.called,d.name+' · '+d.service_label,4000);document.getElementById('called-tok').textContent='Now Calling: '+d.called;document.getElementById('called-nm').textContent=d.name+' — '+d.service_label;const p=document.getElementById('called-pill');p.style.display='block';setTimeout(()=>p.style.display='none',6000);loadQueue()}catch(e){toast('❌','Error','Could not call next token')}}
+function refreshAll(){loadZones();loadPriorityAndTime();loadQueue();loadSvc();loadChart();toast('↻','Refreshed','All data updated')}
+loadZones();loadPriorityAndTime();loadQueue();loadSvc();loadChart();
+setInterval(loadZones,8000);setInterval(loadPriorityAndTime,10000);setInterval(loadQueue,5000);setInterval(loadSvc,10000);setInterval(loadChart,30000);
+</script>
+{% endblock %}
